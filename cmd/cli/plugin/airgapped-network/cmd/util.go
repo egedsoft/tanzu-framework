@@ -10,6 +10,7 @@ import (
 	"strings"
 )
 
+/*
 type ImagePathInfo struct {
 	ImagePath string `yaml:"imagePath"`
 }
@@ -18,23 +19,13 @@ type BomCompatibilitySection struct {
 	Compatibility ImagePathInfo `yaml:"tkr-compatibility"`
 }
 
+*/
 func printErrorAndExit(err error) {
 	fmt.Printf("failed with error %s\n", err.Error())
 	os.Exit(1)
 }
 
-func IsTagValid(tag string) bool {
-	if tag == "" {
-		return false
-	}
-
-	if !strings.HasPrefix(tag, "v") {
-		return false
-	}
-	return true
-}
-
-func IsRTMTag(tag string) bool {
+func isTKGRTMVersion(tag string) bool {
 	tag = strings.TrimPrefix(tag, "v")
 	versions := strings.Split(tag, ".")
 	if len(versions) != 3 {
@@ -49,11 +40,9 @@ func IsRTMTag(tag string) bool {
 }
 
 func underscoredPlus(s string) string {
-	replacer := strings.NewReplacer("+", "_")
-	return replacer.Replace(s)
+	return strings.Replace(s, "+", "_", -1)
 }
 
 func replaceSlash(s string) string {
-	replacer := strings.NewReplacer("/", "-")
-	return replacer.Replace(s)
+	return strings.Replace(s, "/", "-", -1)
 }

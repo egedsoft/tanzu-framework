@@ -23,7 +23,7 @@ var _ = Describe("pushImageToRepo()", func() {
 	pushImage := &cmd.PublishImagesFromTarOptions{}
 
 	BeforeEach(func() {
-		pushImage.PkgClient = &fakes.ImgPkgClientFake{}
+		pushImage.PkgClient = &fakes.ImgpkgClientFake{}
 		pushImage.TkgTarFilePath = "./testdata"
 
 	})
@@ -32,7 +32,7 @@ var _ = Describe("pushImageToRepo()", func() {
 		It("should return err", func() {
 			err := pushImage.PushImageToRepo()
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("while reading publish-images-fromtar.yaml file"))
+			Expect(err.Error()).To(ContainSubstring("Error while reading testdata/publish-images-fromtar.yaml file"))
 		})
 	})
 	When("publish-images-fromtar.yaml, which contain tar file name and destination repo path, has wrong format", func() {

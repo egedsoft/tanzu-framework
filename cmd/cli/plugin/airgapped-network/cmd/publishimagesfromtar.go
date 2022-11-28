@@ -14,8 +14,8 @@ import (
 
 type PublishImagesFromTarOptions struct {
 	TkgTarFilePath             string
-	customImageRepoCertificate string
-	PkgClient                  ImgPkgClient
+	CustomImageRepoCertificate string
+	PkgClient                  ImgpkgClient
 }
 
 var pushImage = &PublishImagesFromTarOptions{}
@@ -28,15 +28,15 @@ var PublishImagesfromtarCmd = &cobra.Command{
 }
 
 func init() {
-	PublishImagesfromtarCmd.Flags().StringVarP(&pushImage.TkgTarFilePath, "tkgTarFilePath", "", "", "Tar file path")
-	PublishImagesfromtarCmd.Flags().StringVarP(&pushImage.customImageRepoCertificate, "customRepoCertificate", "", "", "custom repo certificate")
+	PublishImagesfromtarCmd.Flags().StringVarP(&pushImage.TkgTarFilePath, "tkgTarFilePath", "", "", "Path to the folder where the downloaded tar files are in the disk")
+	PublishImagesfromtarCmd.Flags().StringVarP(&pushImage.CustomImageRepoCertificate, "customRepoCertificate", "", "", "custom repo certificate")
 }
 
-func (pushImage *PublishImagesFromTarOptions) PushImageToRepo() error {
-	yamlFile := filepath.Join(pushImage.TkgTarFilePath, "publish-images-fromtar.yaml")
+func (p *PublishImagesFromTarOptions) PushImageToRepo() error {
+	yamlFile := filepath.Join(p.TkgTarFilePath, "publish-images-fromtar.yaml")
 	yfile, err := os.ReadFile(yamlFile)
 	if err != nil {
-		return errors.Wrapf(err, "Error while reading publish-images-fromtar.yaml file")
+		return errors.Wrapf(err, "Error while reading %s file", yamlFile)
 	}
 
 	data := make(map[string]string)
@@ -47,8 +47,8 @@ func (pushImage *PublishImagesFromTarOptions) PushImageToRepo() error {
 	}
 
 	for tarfile, path := range data {
-		tarfile = filepath.Join(pushImage.TkgTarFilePath, tarfile)
-		err = pushImage.PkgClient.ImgpkgCopyImageFromTar(tarfile, path, pushImage.customImageRepoCertificate)
+		tarfile = filepath.Join(p.TkgTarFilePath, tarfile)
+		err = p.PkgClient.CopyImageFromTar(tarfile, path, p.CustomImageRepoCertificate)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func (pushImage *PublishImagesFromTarOptions) PushImageToRepo() error {
 }
 
 func publishImagesFromTar(cmd *cobra.Command, args []string) error {
-	pushImage.PkgClient = &imgpkgclient{}
+	pushImage.PkgClient = &imgpkgClient{}
 	err := pushImage.PushImageToRepo()
 	if err != nil {
 		return err

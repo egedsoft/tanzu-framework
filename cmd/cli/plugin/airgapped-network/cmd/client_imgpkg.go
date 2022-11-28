@@ -19,10 +19,10 @@ import (
 	v1 "github.com/vmware-tanzu/carvel-imgpkg/pkg/imgpkg/v1"
 )
 
-type imgpkgclient struct {
+type imgpkgClient struct {
 }
 
-func (pkgClient *imgpkgclient) ImgpkgCopyImageFromTar(sourceImageName, destImageRepo, customImageRepoCertificate string) error {
+func (c *imgpkgClient) CopyImageFromTar(sourceImageName, destImageRepo, customImageRepoCertificate string) error {
 	confUI := ui.NewConfUI(ui.NewNoopLogger())
 	copyOptions := cmd.NewCopyOptions(confUI)
 	copyOptions.Concurrency = 1
@@ -38,8 +38,8 @@ func (pkgClient *imgpkgclient) ImgpkgCopyImageFromTar(sourceImageName, destImage
 	return nil
 }
 
-func (pkgClient *imgpkgclient) ImgpkgCopyToTar(sourceImageName, destImageRepo string) error {
-	confUI := ui.NewConfUI(ui.NewNoopLogger())
+func (c *imgpkgClient) CopyImageToTar(sourceImageName, destImageRepo string) error {
+	confUI := ui.NewConfUI(ui.NewNoopLogger()) // TODO: this parameter should be given by the caller instead of being hardcoded
 	copyOptions := cmd.NewCopyOptions(confUI)
 	copyOptions.TarFlags.Resume = true
 	copyOptions.Concurrency = 5
@@ -63,9 +63,9 @@ func (pkgClient *imgpkgclient) ImgpkgCopyToTar(sourceImageName, destImageRepo st
 	return nil
 }
 
-func (pkgClient *imgpkgclient) ImgpkgPullImage(sourceImageName, destDir string) error {
+func (c *imgpkgClient) PullImage(sourceImageName, destDir string) error {
 	var outputBuf, errorBuf bytes.Buffer
-	writerUI := ui.NewWriterUI(&outputBuf, &errorBuf, nil)
+	writerUI := ui.NewWriterUI(&outputBuf, &errorBuf, nil) // TODO: this parameter should be given by the caller instead of being hardcoded
 	pullOptions := cmd.NewPullOptions(writerUI)
 	pullOptions.OutputPath = destDir
 	pullOptions.ImageFlags = cmd.ImageFlags{Image: sourceImageName}
@@ -76,7 +76,7 @@ func (pkgClient *imgpkgclient) ImgpkgPullImage(sourceImageName, destDir string) 
 	return nil
 }
 
-func (pkgClient *imgpkgclient) ImgpkgTagListImage(sourceImageName string) []string {
+func (c *imgpkgClient) GetImageTagList(sourceImageName string) []string {
 	tagInfo, _ := v1.TagList(sourceImageName, false, registry.Opts{})
 	var imageTags []string
 	for _, tag := range tagInfo.Tags {

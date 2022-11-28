@@ -4,9 +4,9 @@
 // Package cmd ImgPkgClient defines functions to pull/push/List images
 package cmd
 
-type ImgPkgClient interface {
-	ImgpkgCopyImageFromTar(sourceImageName string, destImageRepo string, customImageRepoCertificate string) error
-	ImgpkgCopyToTar(sourceImageName string, destImageRepo string) error
-	ImgpkgPullImage(sourceImageName string, destDir string) error
-	ImgpkgTagListImage(sourceImageName string) []string
+type ImgpkgClient interface {
+	CopyImageFromTar(sourceImageName string, destImageRepo string, customImageRepoCertificate string) error
+	CopyImageToTar(sourceImageName string, destImageRepo string) error
+	PullImage(sourceImageName string, destDir string) error
+	GetImageTagList(sourceImageName string) []string
 }

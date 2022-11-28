@@ -17,16 +17,19 @@ import (
 
 const tkgversion = "v1.3.0"
 const tkgImageRepo = "projects.registry.vmware.com/tkg"
+const destRepo = "testing.io"
 
 var _ = Describe("DownloadTkgCompatibilityImage()", func() {
 	var (
-		fake = &fakes.ImgPkgClientFake{}
+		fake = &fakes.ImgpkgClientFake{}
 	)
 
 	pullImage := &cmd.PublishImagesToTarOptions{}
 
 	JustBeforeEach(func() {
 		pullImage.ImageDetails = map[string]string{}
+		pullImage.CustomImageRepo = destRepo
+		pullImage.TkgVersion = tkgversion
 
 	})
 
@@ -41,7 +44,7 @@ var _ = Describe("DownloadTkgCompatibilityImage()", func() {
 	When("DownloadTkgCompatibilityImage successful", func() {
 		It("should return nil", func() {
 			tags := []string{"v1", "v3", "v2"}
-			fake.ImgpkgTagListImageReturns(tags)
+			fake.GetImageTagListReturns(tags)
 			pullImage.PkgClient = fake
 			err := pullImage.DownloadTkgCompatibilityImage()
 			Expect(err).ToNot(HaveOccurred())
@@ -53,7 +56,7 @@ var _ = Describe("DownloadTkgCompatibilityImage()", func() {
 
 var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 	var (
-		fake = &fakes.ImgPkgClientFake{}
+		fake = &fakes.ImgpkgClientFake{}
 	)
 	pullImage := &cmd.PublishImagesToTarOptions{}
 	JustBeforeEach(func() {
@@ -64,7 +67,7 @@ var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 
 	When("Error while downloading tkg-bom", func() {
 		It("should return err", func() {
-			fake.ImgpkgCopyToTarReturns(errors.New(""))
+			fake.CopyImageToTarReturns(errors.New(""))
 			pullImage.PkgClient = fake
 			tkgCompatibilityRelativeImagePath, err := pullImage.DownloadTkgBomAndComponentImages()
 			Expect(err).To(HaveOccurred())
@@ -76,7 +79,7 @@ var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 		It("should return nil", func() {
 			err := os.MkdirAll("./tmp", os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
-			fake.ImgpkgCopyToTarReturns(nil)
+			fake.CopyImageToTarReturns(nil)
 			Expect(err).ToNot(HaveOccurred())
 			pullImage.PkgClient = fake
 			err = utils.CopyFile("./testdata/tkg-bom-v1.3.0.yaml", "./tmp/tkg-bom-v1.3.0.yaml")
@@ -94,7 +97,7 @@ var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 
 var _ = Describe("DownloadTkrCompatibilityImage()", func() {
 	var (
-		fake = &fakes.ImgPkgClientFake{}
+		fake = &fakes.ImgpkgClientFake{}
 	)
 	pullImage := &cmd.PublishImagesToTarOptions{}
 
@@ -119,7 +122,7 @@ var _ = Describe("DownloadTkrCompatibilityImage()", func() {
 			tags := []string{"v19"}
 			err := os.MkdirAll("./tmp", os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
-			fake.ImgpkgTagListImageReturns(tags)
+			fake.GetImageTagListReturns(tags)
 			pullImage.PkgClient = fake
 			err = utils.CopyFile("./testdata/tkr-compatibility.yaml", "./tmp/tkr-compatibility.yaml")
 			Expect(err).ToNot(HaveOccurred())
@@ -136,7 +139,7 @@ var _ = Describe("DownloadTkrCompatibilityImage()", func() {
 
 var _ = Describe("DownloadTkrBomAndComponentImages()", func() {
 	var (
-		fake = &fakes.ImgPkgClientFake{}
+		fake = &fakes.ImgpkgClientFake{}
 	)
 	pullImage := &cmd.PublishImagesToTarOptions{}
 
@@ -148,7 +151,8 @@ var _ = Describe("DownloadTkrBomAndComponentImages()", func() {
 	})
 	When("Error while downloading tkr bom", func() {
 		It("should return err", func() {
-			fake.ImgpkgCopyToTarReturns(errors.New("error while downloading tkr bom"))
+			pullImage.CustomImageRepo = destRepo
+			fake.CopyImageToTarReturns(errors.New("error while downloading tkr bom"))
 			pullImage.PkgClient = fake
 			err := pullImage.DownloadTkrBomAndComponentImages("v1.20.4+vmware.1-tkg.1")
 			Expect(err).To(HaveOccurred())
@@ -157,9 +161,10 @@ var _ = Describe("DownloadTkrBomAndComponentImages()", func() {
 	})
 	When("DownloadTkrBomAndComponentImages successful", func() {
 		It("should return nil", func() {
+			pullImage.CustomImageRepo = destRepo
 			err := os.MkdirAll("./tmp", os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
-			fake.ImgpkgCopyToTarReturns(nil)
+			fake.CopyImageToTarReturns(nil)
 			pullImage.PkgClient = fake
 			err = utils.CopyFile("./testdata/tkr-bom-v1.17.16+vmware.2-tkg.1.yaml", "./tmp/tkr-bom-v1.17.16+vmware.2-tkg.1.yaml")
 			Expect(err).ToNot(HaveOccurred())

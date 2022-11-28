@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -24,7 +25,7 @@ type PublishImagesToTarOptions struct {
 	TkgImageRepo    string
 	TkgVersion      string
 	CustomImageRepo string
-	PkgClient       ImgPkgClient
+	PkgClient       ImgpkgClient
 	ImageDetails    map[string]string
 }
 
@@ -44,45 +45,52 @@ func init() {
 	pullImage.ImageDetails = map[string]string{}
 }
 
-func (pullImage *PublishImagesToTarOptions) DownloadTkgCompatibilityImage() error {
+func (p *PublishImagesToTarOptions) DownloadTkgCompatibilityImage() error {
+	if p.CustomImageRepo == "" || p.TkgVersion == "" {
+		return errors.New("input parameter CustomImageRepo or TkgVersion is empty")
+	}
+
 	tkgCompatibilityRelativeImagePath := "tkg-compatibility"
 
-	if !IsRTMTag(pullImage.TkgVersion) {
-		tkgCompatibilityRelativeImagePath = filepath.Join(pullImage.TkgVersion, tkgCompatibilityRelativeImagePath)
+	if !isTKGRTMVersion(p.TkgVersion) {
+		tkgCompatibilityRelativeImagePath = filepath.Join(p.TkgVersion, tkgCompatibilityRelativeImagePath)
 	}
-	tkgCompatibilityImagePath := path.Join(pullImage.TkgImageRepo, tkgCompatibilityRelativeImagePath)
-	imageTags := pullImage.PkgClient.ImgpkgTagListImage(tkgCompatibilityImagePath)
+	tkgCompatibilityImagePath := path.Join(p.TkgImageRepo, tkgCompatibilityRelativeImagePath)
+	imageTags := p.PkgClient.GetImageTagList(tkgCompatibilityImagePath)
 	if len(imageTags) == 0 {
 		return errors.New("image doesn't have any tags")
 	}
 	sourceImageName := tkgCompatibilityImagePath + ":" + imageTags[len(imageTags)-1]
 	tarFilename := "tkg-compatibility" + "-" + imageTags[len(imageTags)-1] + ".tar"
-	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
+	err := p.PkgClient.CopyImageToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return err
 	}
-	destRepo := path.Join(pullImage.CustomImageRepo, tkgCompatibilityRelativeImagePath)
-	pullImage.ImageDetails[tarFilename] = destRepo
+	destRepo := path.Join(p.CustomImageRepo, tkgCompatibilityRelativeImagePath)
+	p.ImageDetails[tarFilename] = destRepo
 	return nil
 }
 
-func (pullImage *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (string, error) {
-	tkgBomImagePath := path.Join(pullImage.TkgImageRepo, "tkg-bom")
+func (p *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (string, error) {
+	if p.TkgImageRepo == "" || p.TkgVersion == "" {
+		return "", errors.New("input parameter TkgImageRepo or TkgVersion is empty")
+	}
+	tkgBomImagePath := path.Join(p.TkgImageRepo, "tkg-bom")
 
-	sourceImageName := tkgBomImagePath + ":" + pullImage.TkgVersion
-	tarnames := "tkg-bom" + "-" + pullImage.TkgVersion + ".tar"
-	destRepo := path.Join(pullImage.CustomImageRepo, tkgBomImagePath)
-	pullImage.ImageDetails[tarnames] = destRepo
-	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarnames)
+	sourceImageName := tkgBomImagePath + ":" + p.TkgVersion
+	tarnames := "tkg-bom" + "-" + p.TkgVersion + ".tar"
+	destRepo := path.Join(p.CustomImageRepo, tkgBomImagePath)
+	p.ImageDetails[tarnames] = destRepo
+	err := p.PkgClient.CopyImageToTar(sourceImageName, tarnames)
 	if err != nil {
 		return "", errors.New("error while downloading tkg-bom")
 	}
-	err = pullImage.PkgClient.ImgpkgPullImage(sourceImageName, outputDir)
+	err = p.PkgClient.PullImage(sourceImageName, outputDir)
 	if err != nil {
 		return "", err
 	}
 	// read the tkg-bom file
-	tkgBomFilePath := filepath.Join(outputDir, fmt.Sprintf("tkg-bom-%s.yaml", pullImage.TkgVersion))
+	tkgBomFilePath := filepath.Join(outputDir, fmt.Sprintf("tkg-bom-%s.yaml", p.TkgVersion))
 	b, err := os.ReadFile(tkgBomFilePath)
 
 	// read the tkg-bom file
@@ -95,12 +103,12 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (
 	for _, compInfos := range components {
 		for _, compInfo := range compInfos {
 			for _, imageInfo := range compInfo.Images {
-				sourceImageName = filepath.Join(pullImage.TkgImageRepo, imageInfo.ImagePath) + ":" + imageInfo.Tag
-				destImageRepo := path.Join(pullImage.CustomImageRepo, imageInfo.ImagePath)
+				sourceImageName = filepath.Join(p.TkgImageRepo, imageInfo.ImagePath) + ":" + imageInfo.Tag
+				destImageRepo := path.Join(p.CustomImageRepo, imageInfo.ImagePath)
 				imageInfo.ImagePath = replaceSlash(imageInfo.ImagePath)
 				tarname := imageInfo.ImagePath + "-" + imageInfo.Tag + ".tar"
-				pullImage.ImageDetails[tarname] = destImageRepo
-				err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarname)
+				p.ImageDetails[tarname] = destImageRepo
+				err := p.PkgClient.CopyImageToTar(sourceImageName, tarname)
 				if err != nil {
 					return "", err
 				}
@@ -110,10 +118,14 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (
 	return tkgBom.GetCompatibility(), nil
 }
 
-func (pullImage *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCompatibilityRelativeImagePath string) (tkgVersion []string, err error) {
+func (p *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCompatibilityRelativeImagePath string) (tkgVersion []string, err error) {
+	if p.TkgImageRepo == "" || p.TkgVersion == "" {
+		return nil, errors.New("input parameter TkgImageRepo or TkgVersion is empty")
+	}
+
 	// get the latest tag of tkr-compatibility image
-	tkrCompatibilityImagePath := path.Join(pullImage.TkgImageRepo, tkrCompatibilityRelativeImagePath)
-	imageTags := pullImage.PkgClient.ImgpkgTagListImage(tkrCompatibilityImagePath)
+	tkrCompatibilityImagePath := path.Join(p.TkgImageRepo, tkrCompatibilityRelativeImagePath)
+	imageTags := p.PkgClient.GetImageTagList(tkrCompatibilityImagePath)
 	if len(imageTags) == 0 {
 		return nil, errors.New("image doesn't have any tags")
 	}
@@ -121,18 +133,18 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCom
 	tkrCompatibilityImageURL := tkrCompatibilityImagePath + ":" + imageTags[len(imageTags)-1]
 
 	sourceImageName := tkrCompatibilityImageURL
-	err1 := pullImage.PkgClient.ImgpkgPullImage(sourceImageName, outputDir)
+	err1 := p.PkgClient.PullImage(sourceImageName, outputDir)
 	if err1 != nil {
 		return nil, err1
 	}
-	files, err := os.ReadDir("tmp")
+	files, err := os.ReadDir(outputDir)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read directory tmp failed")
 	}
 	if len(files) != 1 || files[0].IsDir() {
 		return nil, fmt.Errorf("tkr-compatibility image should only has exact one file inside")
 	}
-	tkrCompatibilityFilePath := filepath.Join("tmp", files[0].Name())
+	tkrCompatibilityFilePath := filepath.Join(outputDir, files[0].Name())
 	b, err := os.ReadFile(tkrCompatibilityFilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "read tkr-compatibility file from %s faild", tkrCompatibilityFilePath)
@@ -145,7 +157,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCom
 	var tkrVersions []string
 	var found = false
 	for _, compatibilityInfo := range tkrCompatibility.ManagementClusterVersions {
-		if compatibilityInfo.TKGVersion == pullImage.TkgVersion {
+		if compatibilityInfo.TKGVersion == p.TkgVersion {
 			found = true
 			tkrVersions = compatibilityInfo.SupportedKubernetesVersions
 			break
@@ -157,33 +169,36 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCom
 	// imgpkg copy the tkr-compatibility image
 	sourceImageName = tkrCompatibilityImageURL
 	tarFilename := "tkr-compatibility" + "-" + imageTags[len(imageTags)-1] + ".tar"
-	destImageRepo := path.Join(pullImage.CustomImageRepo, tkrCompatibilityRelativeImagePath)
-	pullImage.ImageDetails[tarFilename] = destImageRepo
-	err = pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
+	destImageRepo := path.Join(p.CustomImageRepo, tkrCompatibilityRelativeImagePath)
+	p.ImageDetails[tarFilename] = destImageRepo
+	err = p.PkgClient.CopyImageToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return nil, err
 	}
 	return tkrVersions, nil
 }
 
-func (pullImage *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkrVersion string) error {
+func (p *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkrVersion string) error {
+	if p.TkgImageRepo == "" || p.CustomImageRepo == "" {
+		return errors.New("input parameter TkgImageRepo or CustomImageRepo is empty")
+	}
 	tkrTag := underscoredPlus(tkrVersion)
-	tkrBomImagePath := path.Join(pullImage.TkgImageRepo, "tkr-bom")
+	tkrBomImagePath := path.Join(p.TkgImageRepo, "tkr-bom")
 	sourceImageName := tkrBomImagePath + ":" + tkrTag
 	tarFilename := "tkr-bom" + "-" + tkrTag + ".tar"
-	destImageRepo := path.Join(pullImage.CustomImageRepo, "tkr-bom")
-	pullImage.ImageDetails[tarFilename] = destImageRepo
-	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
+	destImageRepo := path.Join(p.CustomImageRepo, "tkr-bom")
+	p.ImageDetails[tarFilename] = destImageRepo
+	err := p.PkgClient.CopyImageToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return err
 	}
 	sourceImageName = tkrBomImagePath + ":" + tkrTag
-	err = pullImage.PkgClient.ImgpkgPullImage(sourceImageName, outputDir)
+	err = p.PkgClient.PullImage(sourceImageName, outputDir)
 	if err != nil {
 		return err
 	}
 	// read the tkr-bom file
-	tkrBomFilePath := filepath.Join("tmp", fmt.Sprintf("tkr-bom-%s.yaml", tkrVersion))
+	tkrBomFilePath := filepath.Join(outputDir, fmt.Sprintf("tkr-bom-%s.yaml", tkrVersion))
 	b, err := os.ReadFile(tkrBomFilePath)
 	if err != nil {
 		return errors.Wrapf(err, "read tkr-bom file from %s faild", tkrBomFilePath)
@@ -194,12 +209,12 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkr
 	for _, compInfos := range components {
 		for _, compInfo := range compInfos {
 			for _, imageInfo := range compInfo.Images {
-				sourceImageName = filepath.Join(pullImage.TkgImageRepo, imageInfo.ImagePath) + ":" + imageInfo.Tag
-				destImageRepo := path.Join(pullImage.CustomImageRepo, imageInfo.ImagePath)
+				sourceImageName = filepath.Join(p.TkgImageRepo, imageInfo.ImagePath) + ":" + imageInfo.Tag
+				destImageRepo := path.Join(p.CustomImageRepo, imageInfo.ImagePath)
 				imageInfo.ImagePath = replaceSlash(imageInfo.ImagePath)
 				tarname := imageInfo.ImagePath + "-" + imageInfo.Tag + ".tar"
-				pullImage.ImageDetails[tarname] = destImageRepo
-				err = pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarname)
+				p.ImageDetails[tarname] = destImageRepo
+				err = p.PkgClient.CopyImageToTar(sourceImageName, tarname)
 				if err != nil {
 					return err
 				}
@@ -210,8 +225,8 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkr
 }
 
 func publishImagesToTar(cmd *cobra.Command, args []string) error {
-	pullImage.PkgClient = &imgpkgclient{}
-	if !IsTagValid(pullImage.TkgVersion) {
+	pullImage.PkgClient = &imgpkgClient{}
+	if pullImage.TkgVersion == "" || !strings.HasPrefix(pullImage.TkgVersion, "v") {
 		return fmt.Errorf("invalid TKG Tag %s", pullImage.TkgVersion)
 	}
 	if pullImage.TkgImageRepo == "" { // TODO : Put more validation
