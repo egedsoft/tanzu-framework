@@ -588,7 +588,7 @@ func (c *client) WaitForClusterInitialized(clusterName, namespace string) error 
 
 		if err == nil {
 			// should retry in this condition
-			// For dimension env, sometimes it will take some time to connect to vcenter to create resources like cluster secret
+			// Retry waiting for cluster ready status for slow I/O infrastructure or resource constrained environments.
 			if conditions.IsFalse(currentClusterInfo.ClusterObject, capi.ReadyCondition) &&
 				(*conditions.GetSeverity(currentClusterInfo.ClusterObject, capi.ReadyCondition) == capi.ConditionSeverityError) {
 				reason := conditions.GetReason(currentClusterInfo.ClusterObject, capi.ReadyCondition)
