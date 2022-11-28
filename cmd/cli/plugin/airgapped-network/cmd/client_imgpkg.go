@@ -22,7 +22,7 @@ import (
 type imgpkgclient struct {
 }
 
-func (pkgClient *imgpkgclient) ImgpkgCopyImagefromtar(sourceImageName, destImageRepo, customImageRepoCertificate string) error {
+func (pkgClient *imgpkgclient) ImgpkgCopyImageFromTar(sourceImageName, destImageRepo, customImageRepoCertificate string) error {
 	confUI := ui.NewConfUI(ui.NewNoopLogger())
 	copyOptions := cmd.NewCopyOptions(confUI)
 	copyOptions.Concurrency = 1
@@ -38,7 +38,7 @@ func (pkgClient *imgpkgclient) ImgpkgCopyImagefromtar(sourceImageName, destImage
 	return nil
 }
 
-func (pkgClient *imgpkgclient) ImgpkgCopytotar(sourceImageName, destImageRepo string) error {
+func (pkgClient *imgpkgclient) ImgpkgCopyToTar(sourceImageName, destImageRepo string) error {
 	confUI := ui.NewConfUI(ui.NewNoopLogger())
 	copyOptions := cmd.NewCopyOptions(confUI)
 	copyOptions.TarFlags.Resume = true

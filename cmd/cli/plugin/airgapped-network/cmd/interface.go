@@ -5,8 +5,8 @@
 package cmd
 
 type ImgPkgClient interface {
-	ImgpkgCopyImagefromtar(sourceImageName string, destImageRepo string, customImageRepoCertificate string) error
-	ImgpkgCopytotar(sourceImageName string, destImageRepo string) error
+	ImgpkgCopyImageFromTar(sourceImageName string, destImageRepo string, customImageRepoCertificate string) error
+	ImgpkgCopyToTar(sourceImageName string, destImageRepo string) error
 	ImgpkgPullImage(sourceImageName string, destDir string) error
 	ImgpkgTagListImage(sourceImageName string) []string
 }

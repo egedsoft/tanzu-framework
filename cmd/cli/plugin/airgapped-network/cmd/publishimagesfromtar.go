@@ -48,7 +48,7 @@ func (pushImage *PublishImagesFromTarOptions) PushImageToRepo() error {
 
 	for tarfile, path := range data {
 		tarfile = filepath.Join(pushImage.TkgTarFilePath, tarfile)
-		err = pushImage.PkgClient.ImgpkgCopyImagefromtar(tarfile, path, pushImage.customImageRepoCertificate)
+		err = pushImage.PkgClient.ImgpkgCopyImageFromTar(tarfile, path, pushImage.customImageRepoCertificate)
 		if err != nil {
 			return err
 		}

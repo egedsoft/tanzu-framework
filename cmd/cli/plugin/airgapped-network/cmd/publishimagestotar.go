@@ -57,7 +57,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkgCompatibilityImage() erro
 	}
 	sourceImageName := tkgCompatibilityImagePath + ":" + imageTags[len(imageTags)-1]
 	tarFilename := "tkg-compatibility" + "-" + imageTags[len(imageTags)-1] + ".tar"
-	err := pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarFilename)
+	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (
 	tarnames := "tkg-bom" + "-" + pullImage.TkgVersion + ".tar"
 	destRepo := path.Join(pullImage.CustomImageRepo, tkgBomImagePath)
 	pullImage.ImageDetails[tarnames] = destRepo
-	err := pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarnames)
+	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarnames)
 	if err != nil {
 		return "", errors.New("error while downloading tkg-bom")
 	}
@@ -100,7 +100,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkgBomAndComponentImages() (
 				imageInfo.ImagePath = replaceSlash(imageInfo.ImagePath)
 				tarname := imageInfo.ImagePath + "-" + imageInfo.Tag + ".tar"
 				pullImage.ImageDetails[tarname] = destImageRepo
-				err := pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarname)
+				err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarname)
 				if err != nil {
 					return "", err
 				}
@@ -159,7 +159,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrCompatibilityImage(tkrCom
 	tarFilename := "tkr-compatibility" + "-" + imageTags[len(imageTags)-1] + ".tar"
 	destImageRepo := path.Join(pullImage.CustomImageRepo, tkrCompatibilityRelativeImagePath)
 	pullImage.ImageDetails[tarFilename] = destImageRepo
-	err = pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarFilename)
+	err = pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +173,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkr
 	tarFilename := "tkr-bom" + "-" + tkrTag + ".tar"
 	destImageRepo := path.Join(pullImage.CustomImageRepo, "tkr-bom")
 	pullImage.ImageDetails[tarFilename] = destImageRepo
-	err := pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarFilename)
+	err := pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarFilename)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (pullImage *PublishImagesToTarOptions) DownloadTkrBomAndComponentImages(tkr
 				imageInfo.ImagePath = replaceSlash(imageInfo.ImagePath)
 				tarname := imageInfo.ImagePath + "-" + imageInfo.Tag + ".tar"
 				pullImage.ImageDetails[tarname] = destImageRepo
-				err = pullImage.PkgClient.ImgpkgCopytotar(sourceImageName, tarname)
+				err = pullImage.PkgClient.ImgpkgCopyToTar(sourceImageName, tarname)
 				if err != nil {
 					return err
 				}

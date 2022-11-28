@@ -64,7 +64,7 @@ var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 
 	When("Error while downloading tkg-bom", func() {
 		It("should return err", func() {
-			fake.ImgpkgCopytotarReturns(errors.New(""))
+			fake.ImgpkgCopyToTarReturns(errors.New(""))
 			pullImage.PkgClient = fake
 			tkgCompatibilityRelativeImagePath, err := pullImage.DownloadTkgBomAndComponentImages()
 			Expect(err).To(HaveOccurred())
@@ -76,7 +76,7 @@ var _ = Describe("DownloadTkgBomAndComponentImages()", func() {
 		It("should return nil", func() {
 			err := os.MkdirAll("./tmp", os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
-			fake.ImgpkgCopytotarReturns(nil)
+			fake.ImgpkgCopyToTarReturns(nil)
 			Expect(err).ToNot(HaveOccurred())
 			pullImage.PkgClient = fake
 			err = utils.CopyFile("./testdata/tkg-bom-v1.3.0.yaml", "./tmp/tkg-bom-v1.3.0.yaml")
@@ -148,7 +148,7 @@ var _ = Describe("DownloadTkrBomAndComponentImages()", func() {
 	})
 	When("Error while downloading tkr bom", func() {
 		It("should return err", func() {
-			fake.ImgpkgCopytotarReturns(errors.New("error while downloading tkr bom"))
+			fake.ImgpkgCopyToTarReturns(errors.New("error while downloading tkr bom"))
 			pullImage.PkgClient = fake
 			err := pullImage.DownloadTkrBomAndComponentImages("v1.20.4+vmware.1-tkg.1")
 			Expect(err).To(HaveOccurred())
@@ -159,7 +159,7 @@ var _ = Describe("DownloadTkrBomAndComponentImages()", func() {
 		It("should return nil", func() {
 			err := os.MkdirAll("./tmp", os.ModePerm)
 			Expect(err).ToNot(HaveOccurred())
-			fake.ImgpkgCopytotarReturns(nil)
+			fake.ImgpkgCopyToTarReturns(nil)
 			pullImage.PkgClient = fake
 			err = utils.CopyFile("./testdata/tkr-bom-v1.17.16+vmware.2-tkg.1.yaml", "./tmp/tkr-bom-v1.17.16+vmware.2-tkg.1.yaml")
 			Expect(err).ToNot(HaveOccurred())
