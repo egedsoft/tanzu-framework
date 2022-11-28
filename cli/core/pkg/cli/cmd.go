@@ -27,7 +27,7 @@ func GetCmd(p *cliapi.PluginDescriptor) *cobra.Command {
 		},
 		DisableFlagParsing: true,
 		Annotations: map[string]string{
-			"group": string(p.Group),
+			"group": string(getCmdGroup(p.Group)),
 			"scope": p.Scope,
 		},
 		Hidden:  p.Hidden,
@@ -133,6 +133,13 @@ func getHelpArguments() []string {
 
 	// Then add the -h flag for whatever we found
 	return append(helpArgs, "-h")
+}
+
+func getCmdGroup(group cliapi.CmdGroup) cliapi.CmdGroup {
+	if group == cliapi.RunCmdGroup || group == cliapi.ManageCmdGroup || group == cliapi.BuildCmdGroup || group == cliapi.ObserveCmdGroup || group == "" {
+		return cliapi.PluginsCmdGroup
+	}
+	return group
 }
 
 // TestCmd returns a cobra command for the plugin.

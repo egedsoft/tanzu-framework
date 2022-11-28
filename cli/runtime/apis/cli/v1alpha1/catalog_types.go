@@ -87,8 +87,11 @@ const (
 	// VersionCmdGroup are version commands.
 	VersionCmdGroup CmdGroup = "Version"
 
+	// PluginsCmdGroup are generic plugin commands.
+	PluginsCmdGroup CmdGroup = "Plugins"
+
 	// AdminCmdGroup are admin commands.
-	AdminCmdGroup CmdGroup = "Admin"
+	AdminCmdGroup CmdGroup = "Admin Plugins"
 
 	// TestCmdGroup is the test command group.
 	TestCmdGroup CmdGroup = "Test"

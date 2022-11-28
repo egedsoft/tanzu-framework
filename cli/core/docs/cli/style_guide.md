@@ -446,13 +446,9 @@ Example
 
 ```txt
 Available command groups:
-  Build
+  Plugins
     apps                    Applications on Kubernetes
-
-  Manage
     integration             Get available integrations and their information from registry
-
-  Run
     cluster                 Kubernetes cluster operations
     kubernetes-release      Kubernetes release operations
     management-cluster      Kubernetes management cluster operations
